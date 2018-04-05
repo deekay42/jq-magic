@@ -1,0 +1,47 @@
+[.[] | { "gameId": .gameId,
+        "participants": [.participants[] | .championId],
+        "spells": [.participants[] | [.spell1Id, .spell2Id]],
+        "itemsTimeline": [(try [.itemsTimeline[]] as $item_transactions |
+          [.participants[]] as $participants |
+          foreach range(0;$item_transactions | length) as $index
+            ([[],[],[],[],[],[],[],[],[],[]];
+              $item_transactions[$index] as $current |
+              ($current.participantId | tonumber) as $participantsIdKey |
+              ([$participants[].participantId] | index($participantsIdKey)) as $key |
+              if $current.type=="ITEM_PURCHASED" then
+                if $current.itemId==2003 and (.[$key] | contains([2003])) then
+                    .
+                else
+                    .[$key] |= .+ [$current.itemId]
+                end
+              elif $current.type=="ITEM_DESTROYED" then
+                if $current.itemId==3004 then
+                    del(.[$key] | .[] | select(. == 3004)) |
+                    .[$key] |= .+ [3042]
+                elif $current.itemId==3008 then
+                    del(.[$key] | .[] | select(. == 3008)) |
+                    .[$key] |= .+ [3043]
+                elif $current.itemId==3003 then
+                    del(.[$key] | .[] | select(. == 3003)) |
+                    .[$key] |= .+ [3040]
+                elif $current.itemId==3007 then
+                    del(.[$key] | .[] | select(. == 3007)) |
+                    .[$key] |= .+ [3048]
+                else
+                    del(.[$key] | .[] | select(. == $current.itemId))
+                end
+              elif $current.type=="ITEM_SOLD" then
+                del(.[$key] | .[] | select(. == $current.itemId))
+              else
+                .
+              end;
+              if $index >= (($item_transactions | length)-1) then
+                .
+              elif $item_transactions[$index].timestamp == $item_transactions[$index+1].timestamp then
+                empty
+              else
+                .
+              end
+             )
+           catch "ERROR")]
+}]
